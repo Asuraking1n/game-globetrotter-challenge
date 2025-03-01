@@ -1,0 +1,23 @@
+[
+  {
+    "username": "nishant",
+    "score": {
+      "correct": 2,
+      "incorrect": 0
+    }
+  },
+  {
+    "username": "raju",
+    "score": {
+      "correct": 0,
+      "incorrect": 0
+    }
+  },
+  {
+    "username": "kamal",
+    "score": {
+      "correct": 0,
+      "incorrect": 0
+    }
+  }
+]
