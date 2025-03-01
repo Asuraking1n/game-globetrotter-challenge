@@ -48,3 +48,36 @@ jest.mock("next/server", () => {
     },
   };
 });
+
+// Mock MongoDB
+jest.mock('@/utils/mongodb', () => {
+  const mockCollection = {
+    findOne: jest.fn(),
+    insertOne: jest.fn(),
+    findOneAndUpdate: jest.fn()
+  };
+  
+  const mockDb = {
+    collection: jest.fn(() => mockCollection)
+  };
+  
+  const mockClient = {
+    db: jest.fn(() => mockDb)
+  };
+  
+  const mock = {
+    __esModule: true,
+    default: Promise.resolve(mockClient)
+  };
+  
+  // Add mockCollection to the mock object itself
+  Object.defineProperty(global, 'mockCollection', {
+    value: mockCollection,
+    writable: true
+  });
+  
+  return mock;
+});
+
+// Make mockCollection available for import
+export const mockCollection = global.mockCollection;

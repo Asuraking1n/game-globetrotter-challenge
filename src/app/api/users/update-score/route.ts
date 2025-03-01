@@ -1,9 +1,5 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-import { User } from "@/types";
-
-const usersFilePath = path.join(process.cwd(), "users.json");
+import clientPromise from "@/utils/mongodb";
 
 export async function POST(request: Request) {
   try {
@@ -16,24 +12,25 @@ export async function POST(request: Request) {
       );
     }
 
-    const fileContents = fs.readFileSync(usersFilePath, "utf8");
-    const users: User[] = JSON.parse(fileContents);
+    const client = await clientPromise;
+    const db = client.db("globetrotter");
+    const usersCollection = db.collection("users");
 
-    const userIndex = users.findIndex((user) => user.username === username);
+    const updateField = isCorrect
+      ? { "score.correct": 1 }
+      : { "score.incorrect": 1 };
 
-    if (userIndex === -1) {
+    const result = await usersCollection.findOneAndUpdate(
+      { username },
+      { $inc: updateField },
+      { returnDocument: "after" }
+    );
+
+    if (!result) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    if (isCorrect) {
-      users[userIndex].score.correct += 1;
-    } else {
-      users[userIndex].score.incorrect += 1;
-    }
-
-    fs.writeFileSync(usersFilePath, JSON.stringify(users, null, 2));
-
-    return NextResponse.json(users[userIndex]);
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Error updating score:", error);
     return NextResponse.json(

@@ -10,11 +10,11 @@
 
 
 
+
+
 # Globetrotter
 
 Globetrotter is an interactive geography quiz game that challenges players to identify cities around the world based on clues. Test your knowledge, improve your geography skills, and compete with friends!
-
-Demo: https://game-globetrotter-challenge.vercel.app/
 
 ## Features
 
@@ -69,7 +69,9 @@ globetrotter/
 │   ├── types/               # TypeScript type definitions
 │   └── utils/               # Utility functions
 │       ├── __tests__/       # Utility tests
-│       └── imageGenerator.ts # Image generation for sharing
+│       ├── imageGenerator.ts # Image generation for sharing
+│       └── mongodb.ts       # MongoDB connection utility
+├── data.json                # Geography data
 ├── jest.config.ts           # Jest configuration
 ├── jest.setup.ts            # Jest setup
 ├── next.config.js           # Next.js configuration
@@ -78,14 +80,15 @@ globetrotter/
 └── tsconfig.json            # TypeScript configuration
 ```
 
+
 ## Technical Implementation
 
 - **Frontend**: Next.js 14 with React 18, TypeScript, and Tailwind CSS
 - **Backend**: Next.js API routes for server-side functionality
+- **Database**: MongoDB for user data storage
 - **State Management**: React hooks for local state management
 - **Testing**: Jest and React Testing Library for unit and integration tests
 - **Styling**: Tailwind CSS for responsive design
-- **Data Storage**: File-based JSON storage (can be extended to database)
 
 ## API Documentation
 
@@ -101,6 +104,7 @@ Creates a new user or retrieves an existing one.
 }
 ```
 
+
 **Response:**
 ```json
 {
@@ -111,6 +115,7 @@ Creates a new user or retrieves an existing one.
   }
 }
 ```
+
 
 #### `GET /api/users?username=<username>`
 Retrieves a user by username.
@@ -125,6 +130,31 @@ Retrieves a user by username.
   }
 }
 ```
+
+
+#### `POST /api/users/update-score`
+Updates a user's score.
+
+**Request Body:**
+```json
+{
+  "username": "string",
+  "isCorrect": boolean
+}
+```
+
+
+**Response:**
+```json
+{
+  "username": "string",
+  "score": {
+    "correct": number,
+    "incorrect": number
+  }
+}
+```
+
 
 ### Destinations API
 
@@ -144,11 +174,13 @@ Returns a random destination with multiple-choice options.
 }
 ```
 
+
 ## Getting Started
 
 ### Prerequisites
 - Node.js (v16 or higher)
 - npm or yarn
+- MongoDB Atlas account (for database)
 
 ### Installation
 
@@ -158,6 +190,7 @@ git clone https://github.com/yourusername/globetrotter.git
 cd globetrotter
 ```
 
+
 2. Install dependencies:
 ```bash
 npm install
@@ -165,14 +198,23 @@ npm install
 yarn install
 ```
 
-3. Run the development server:
+
+3. Set up environment variables:
+Create a `.env.local` file in the project root with:
+```
+MONGODB_URI=mongodb+srv://yourusername:yourpassword@yourcluster.mongodb.net/globetrotter?retryWrites=true&w=majority
+```
+
+
+4. Run the development server:
 ```bash
 npm run dev
 # or
 yarn dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser to start playing!
+
+5. Open [http://localhost:3000](http://localhost:3000) in your browser to start playing!
 
 ## Testing
 
@@ -183,10 +225,12 @@ npm test
 yarn test
 ```
 
+
 For test coverage:
 ```bash
 npm test -- --coverage
 ```
+
 
 ## Deployment
 
@@ -194,7 +238,16 @@ The application can be deployed to Vercel with minimal configuration:
 
 1. Push your code to a GitHub repository
 2. Import the project in Vercel
-3. Deploy
+3. Add your MongoDB URI as an environment variable in the Vercel dashboard
+4. Deploy
+
+## Database Setup
+
+1. Create a MongoDB Atlas account at [https://www.mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas)
+2. Create a new cluster (the free tier is sufficient)
+3. Create a database user with read/write permissions
+4. Get your connection string from the "Connect" button
+5. Replace the placeholder values in your connection string with your actual username and password
 
 ## Future Enhancements
 
@@ -204,6 +257,5 @@ The application can be deployed to Vercel with minimal configuration:
 - More detailed statistics and achievements
 - Map visualization of correctly guessed locations
 
----
 
 Enjoy exploring the world with Globetrotter! 🌎
