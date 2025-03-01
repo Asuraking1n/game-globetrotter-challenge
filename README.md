@@ -46,24 +46,106 @@ Globetrotter is an interactive geography quiz game that challenges players to id
 - Share your results on social media
 - Generate custom score cards for sharing
 
-### 🎨 Visual Design
-- Modern, responsive interface
-- Works on desktop and mobile devices
-- Clean, distraction-free gaming experience
+## Project Structure
+
+```
+globetrotter/
+├── public/                  # Static assets
+├── src/
+│   ├── app/                 # Next.js App Router
+│   │   ├── api/             # API routes
+│   │   │   ├── destinations/  # Destinations API
+│   │   │   └── users/       # Users API
+│   │   ├── layout.tsx       # Root layout
+│   │   └── page.tsx         # Home page
+│   ├── components/          # React components
+│   │   ├── __tests__/       # Component tests
+│   │   ├── Confetti.tsx     # Celebration animation
+│   │   ├── GameBoard.tsx    # Main game interface
+│   │   ├── ShareButton.tsx  # Social sharing functionality
+│   │   └── UserRegistration.tsx # User registration form
+│   ├── types/               # TypeScript type definitions
+│   └── utils/               # Utility functions
+│       ├── __tests__/       # Utility tests
+│       └── imageGenerator.ts # Image generation for sharing
+├── jest.config.ts           # Jest configuration
+├── jest.setup.ts            # Jest setup
+├── next.config.js           # Next.js configuration
+├── package.json             # Project dependencies
+├── tailwind.config.js       # Tailwind CSS configuration
+└── tsconfig.json            # TypeScript configuration
+```
 
 ## Technical Implementation
 
-- Built with Next.js and React
-- TypeScript for type safety
-- Tailwind CSS for styling
-- Jest for comprehensive testing
-- API routes for backend functionality
-- In-memory data storage (can be extended to database)
+- **Frontend**: Next.js 14 with React 18, TypeScript, and Tailwind CSS
+- **Backend**: Next.js API routes for server-side functionality
+- **State Management**: React hooks for local state management
+- **Testing**: Jest and React Testing Library for unit and integration tests
+- **Styling**: Tailwind CSS for responsive design
+- **Data Storage**: File-based JSON storage (can be extended to database)
+
+## API Documentation
+
+### Users API
+
+#### `POST /api/users`
+Creates a new user or retrieves an existing one.
+
+**Request Body:**
+```json
+{
+  "username": "string"
+}
+```
+
+**Response:**
+```json
+{
+  "username": "string",
+  "score": {
+    "correct": 0,
+    "incorrect": 0
+  }
+}
+```
+
+#### `GET /api/users?username=<username>`
+Retrieves a user by username.
+
+**Response:**
+```json
+{
+  "username": "string",
+  "score": {
+    "correct": 0,
+    "incorrect": 0
+  }
+}
+```
+
+### Destinations API
+
+#### `GET /api/destinations`
+Returns a random destination with multiple-choice options.
+
+**Response:**
+```json
+{
+  "destination": {
+    "city": "string",
+    "country": "string",
+    "clues": ["string"],
+    "fun_fact": ["string"]
+  },
+  "options": ["string"]
+}
+```
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js (v14 or higher)
+- Node.js (v16 or higher)
 - npm or yarn
 
 ### Installation
@@ -98,6 +180,19 @@ npm test
 # or
 yarn test
 ```
+
+For test coverage:
+```bash
+npm test -- --coverage
+```
+
+## Deployment
+
+The application can be deployed to Vercel with minimal configuration:
+
+1. Push your code to a GitHub repository
+2. Import the project in Vercel
+3. Deploy
 
 ## Future Enhancements
 
