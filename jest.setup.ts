@@ -65,19 +65,8 @@ jest.mock('@/utils/mongodb', () => {
     db: jest.fn(() => mockDb)
   };
   
-  const mock = {
+  return {
     __esModule: true,
     default: Promise.resolve(mockClient)
   };
-  
-  // Add mockCollection to the mock object itself
-  Object.defineProperty(global, 'mockCollection', {
-    value: mockCollection,
-    writable: true
-  });
-  
-  return mock;
 });
-
-// Make mockCollection available for import
-export const mockCollection = global.mockCollection;
