@@ -14,6 +14,8 @@
 
 Globetrotter is an interactive geography quiz game that challenges players to identify cities around the world based on clues. Test your knowledge, improve your geography skills, and compete with friends!
 
+Demo: https://game-globetrotter-challenge.vercel.app/
+
 ## Features
 
 ### 🌍 Geography Quiz
