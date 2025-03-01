@@ -1,36 +1,112 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+
+
+
+
+
+
+
+
+
+
+
+# Globetrotter
+
+Globetrotter is an interactive geography quiz game that challenges players to identify cities around the world based on clues. Test your knowledge, improve your geography skills, and compete with friends!
+
+## Features
+
+### 🌍 Geography Quiz
+- Guess cities from around the world based on descriptive clues
+- Multiple-choice format with four possible answers
+- Learn interesting facts about each location after answering
+
+### 👤 User Accounts
+- Create a personalized username to track your progress
+- No complex registration required - just enter a username and start playing
+- Your score is saved automatically as you play
+
+### 📊 Score Tracking
+- Track correct and incorrect answers
+- See your performance statistics at a glance
+- Persistent scoring across sessions
+
+### 🎮 Interactive Gameplay
+- Clean, intuitive user interface
+- Immediate feedback on your answers
+- Celebration animations for correct answers
+
+### 🔄 Endless Play
+- Continuous stream of new destinations to guess
+- Never run out of challenges
+- Gradually increase your geography knowledge
+
+### 🔗 Social Sharing
+- Challenge friends to beat your score
+- Share your results on social media
+- Generate custom score cards for sharing
+
+### 🎨 Visual Design
+- Modern, responsive interface
+- Works on desktop and mobile devices
+- Clean, distraction-free gaming experience
+
+## Technical Implementation
+
+- Built with Next.js and React
+- TypeScript for type safety
+- Tailwind CSS for styling
+- Jest for comprehensive testing
+- API routes for backend functionality
+- In-memory data storage (can be extended to database)
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js (v14 or higher)
+- npm or yarn
 
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/globetrotter.git
+cd globetrotter
+```
+
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Run the development server:
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser to start playing!
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Testing
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Run the test suite with:
+```bash
+npm test
+# or
+yarn test
+```
 
-## Learn More
+## Future Enhancements
 
-To learn more about Next.js, take a look at the following resources:
+- Difficulty levels (easy, medium, hard)
+- Themed quizzes (capitals, landmarks, natural wonders)
+- Leaderboards for competitive play
+- More detailed statistics and achievements
+- Map visualization of correctly guessed locations
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Enjoy exploring the world with Globetrotter! 🌎
