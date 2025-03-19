@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Destination, User } from "@/types";
 import Confetti from "./Confetti";
 import ShareButton from "./ShareButton";
@@ -19,7 +19,10 @@ interface GameState {
   isLoading: boolean;
   error: string | null;
   showFeedback: boolean;
+  timeRemaining: number;
 }
+
+const TIMER_DURATION = 30;
 
 const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
   const [gameState, setGameState] = useState<GameState>({
@@ -30,6 +33,7 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
     isLoading: true,
     error: null,
     showFeedback: false,
+    timeRemaining: TIMER_DURATION,
   });
 
   const [inviterScore, setInviterScore] = useState<{
@@ -37,13 +41,86 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
     incorrect: number;
   } | null>(null);
 
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     fetchDestination();
 
     if (invitedBy) {
       fetchInviterScore();
     }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
   }, [invitedBy]);
+
+  useEffect(() => {
+    if (!gameState.isLoading && gameState.destination && !gameState.selectedOption) {
+      startTimer();
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [gameState.isLoading, gameState.destination, gameState.selectedOption]);
+
+  const startTimer = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+
+    setGameState(prev => ({ ...prev, timeRemaining: TIMER_DURATION }));
+
+    timerRef.current = setInterval(() => {
+      setGameState(prev => {
+        const newTimeRemaining = prev.timeRemaining - 1;
+        
+        if (newTimeRemaining <= 0 && !prev.selectedOption) {
+          clearInterval(timerRef.current!);
+          handleTimeout();
+          return { ...prev, timeRemaining: 0 };
+        }
+        
+        return { ...prev, timeRemaining: newTimeRemaining };
+      });
+    }, 1000);
+  };
+
+  const handleTimeout = async () => {
+    if (!gameState.destination) return;
+
+    setGameState(prev => ({
+      ...prev,
+      selectedOption: "timeout",
+      isCorrect: false,
+      showFeedback: true,
+    }));
+
+    try {
+      const response = await fetch("/api/users/update-score", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: user.username,
+          isCorrect: false,
+        }),
+      });
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        onUpdateUser(updatedUser);
+      }
+    } catch (error) {
+      console.error("Error updating score:", error);
+    }
+  };
 
   const fetchInviterScore = async () => {
     try {
@@ -62,7 +139,12 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
   };
 
   const fetchDestination = async () => {
-    setGameState((prev) => ({ ...prev, isLoading: true, error: null }));
+    setGameState((prev) => ({ 
+      ...prev, 
+      isLoading: true, 
+      error: null,
+      timeRemaining: TIMER_DURATION 
+    }));
 
     try {
       const response = await fetch("/api/destinations");
@@ -81,6 +163,7 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
         isCorrect: null,
         isLoading: false,
         showFeedback: false,
+        timeRemaining: TIMER_DURATION,
       }));
     } catch (error) {
       setGameState((prev) => ({
@@ -93,6 +176,10 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
 
   const handleOptionSelect = async (option: string) => {
     if (gameState.selectedOption || !gameState.destination) return;
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
 
     const correctAnswer = `${gameState.destination.city}, ${gameState.destination.country}`;
     const isCorrect = option === correctAnswer;
@@ -151,8 +238,14 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
     return <div className="text-center py-8">No destination found</div>;
   }
 
-  const { destination, options, selectedOption, isCorrect, showFeedback } =
+  const { destination, options, selectedOption, isCorrect, showFeedback, timeRemaining } =
     gameState;
+
+  const getTimerColor = () => {
+    if (timeRemaining > 20) return "text-green-500";
+    if (timeRemaining > 10) return "text-yellow-500";
+    return "text-red-500";
+  };
 
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg">
@@ -175,6 +268,23 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
         </div>
         <ShareButton user={user} />
       </div>
+
+      {!showFeedback && (
+        <div className="mb-4 text-center">
+          <div className={`text-2xl font-bold ${getTimerColor()}`}>
+            Time remaining: {timeRemaining}s
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+            <div 
+              className={`h-2.5 rounded-full ${
+                timeRemaining > 20 ? "bg-green-500" : 
+                timeRemaining > 10 ? "bg-yellow-500" : "bg-red-500"
+              }`} 
+              style={{ width: `${(timeRemaining / TIMER_DURATION) * 100}%` }}
+            ></div>
+          </div>
+        </div>
+      )}
 
       <div className="mb-8">
         <h3 className="text-xl font-semibold mb-4">Where am I?</h3>
@@ -216,12 +326,18 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
           }`}
         >
           <h3 className="text-xl font-semibold mb-2">
-            {isCorrect ? "🎉 Correct!" : "😢 Incorrect!"}
+            {isCorrect 
+              ? "🎉 Correct!" 
+              : selectedOption === "timeout" 
+                ? "⏰ Time's up!" 
+                : "😢 Incorrect!"}
           </h3>
           <p className="mb-2">
             {isCorrect
               ? `You guessed it! It's ${destination.city}, ${destination.country}.`
-              : `Sorry, the correct answer was ${destination.city}, ${destination.country}.`}
+              : selectedOption === "timeout"
+                ? `You ran out of time! The answer was ${destination.city}, ${destination.country}.`
+                : `Sorry, the correct answer was ${destination.city}, ${destination.country}.`}
           </p>
           <p className="font-medium">Fun Fact:</p>
           <p>

@@ -10,7 +10,6 @@ export default function Home() {
   const [invitedBy, setInvitedBy] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if user was invited
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
       const inviteParam = urlParams.get("invite");
@@ -19,7 +18,6 @@ export default function Home() {
       }
     }
 
-    // Check if user is already registered in localStorage
     const savedUser = localStorage.getItem("globetrotter_user");
     if (savedUser) {
       try {
