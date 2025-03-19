@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Destination, User } from "@/types";
 import Confetti from "./Confetti";
 import ShareButton from "./ShareButton";
+import DifficultySelector, { Difficulty } from "./DifficultySelector";
 
 interface GameBoardProps {
   user: User;
@@ -19,9 +20,18 @@ interface GameState {
   isLoading: boolean;
   error: string | null;
   showFeedback: boolean;
+  timeRemaining: number;
 }
 
+// Timer durations for each difficulty level (in seconds)
+const TIMER_DURATIONS = {
+  easy: 60,
+  medium: 30,
+  hard: 15,
+};
+
 const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
+  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [gameState, setGameState] = useState<GameState>({
     destination: null,
     options: [],
@@ -30,6 +40,7 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
     isLoading: true,
     error: null,
     showFeedback: false,
+    timeRemaining: TIMER_DURATIONS[difficulty],
   });
 
   const [inviterScore, setInviterScore] = useState<{
@@ -37,13 +48,104 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
     incorrect: number;
   } | null>(null);
 
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     fetchDestination();
 
     if (invitedBy) {
       fetchInviterScore();
     }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
   }, [invitedBy]);
+
+  // Reset timer when difficulty changes
+  useEffect(() => {
+    setGameState(prev => ({
+      ...prev,
+      timeRemaining: TIMER_DURATIONS[difficulty]
+    }));
+    
+    if (!gameState.isLoading && gameState.destination && !gameState.selectedOption) {
+      startTimer();
+    }
+  }, [difficulty]);
+
+  // Start timer when a new question is loaded
+  useEffect(() => {
+    if (!gameState.isLoading && gameState.destination && !gameState.selectedOption) {
+      startTimer();
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [gameState.isLoading, gameState.destination, gameState.selectedOption]);
+
+  const startTimer = () => {
+    // Clear any existing timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+
+    // Reset timer
+    setGameState(prev => ({ ...prev, timeRemaining: TIMER_DURATIONS[difficulty] }));
+
+    // Start new timer
+    timerRef.current = setInterval(() => {
+      setGameState(prev => {
+        const newTimeRemaining = prev.timeRemaining - 1;
+        
+        // If time is up and no option is selected
+        if (newTimeRemaining <= 0 && !prev.selectedOption) {
+          clearInterval(timerRef.current!);
+          // Handle timeout - mark as incorrect
+          handleTimeout();
+          return { ...prev, timeRemaining: 0 };
+        }
+        
+        return { ...prev, timeRemaining: newTimeRemaining };
+      });
+    }, 1000);
+  };
+
+  const handleTimeout = async () => {
+    if (!gameState.destination) return;
+
+    setGameState(prev => ({
+      ...prev,
+      selectedOption: "timeout",
+      isCorrect: false,
+      showFeedback: true,
+    }));
+
+    try {
+      const response = await fetch("/api/users/update-score", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: user.username,
+          isCorrect: false,
+        }),
+      });
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        onUpdateUser(updatedUser);
+      }
+    } catch (error) {
+      console.error("Error updating score:", error);
+    }
+  };
 
   const fetchInviterScore = async () => {
     try {
@@ -62,10 +164,15 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
   };
 
   const fetchDestination = async () => {
-    setGameState((prev) => ({ ...prev, isLoading: true, error: null }));
+    setGameState((prev) => ({ 
+      ...prev, 
+      isLoading: true, 
+      error: null,
+      timeRemaining: TIMER_DURATIONS[difficulty] 
+    }));
 
     try {
-      const response = await fetch("/api/destinations");
+      const response = await fetch(`/api/destinations?difficulty=${difficulty}`);
 
       if (!response.ok) {
         throw new Error("Failed to fetch destination");
@@ -81,6 +188,7 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
         isCorrect: null,
         isLoading: false,
         showFeedback: false,
+        timeRemaining: TIMER_DURATIONS[difficulty],
       }));
     } catch (error) {
       setGameState((prev) => ({
@@ -93,6 +201,11 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
 
   const handleOptionSelect = async (option: string) => {
     if (gameState.selectedOption || !gameState.destination) return;
+
+    // Stop the timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
 
     const correctAnswer = `${gameState.destination.city}, ${gameState.destination.country}`;
     const isCorrect = option === correctAnswer;
@@ -113,6 +226,7 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
         body: JSON.stringify({
           username: user.username,
           isCorrect,
+          difficulty,
         }),
       });
 
@@ -127,6 +241,14 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
 
   const handleNextQuestion = () => {
     fetchDestination();
+  };
+
+  const handleDifficultyChange = (newDifficulty: Difficulty) => {
+    setDifficulty(newDifficulty);
+    // If we're in the middle of a question, fetch a new one with the new difficulty
+    if (!gameState.isLoading && !gameState.showFeedback) {
+      fetchDestination();
+    }
   };
 
   if (gameState.isLoading) {
@@ -151,8 +273,16 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
     return <div className="text-center py-8">No destination found</div>;
   }
 
-  const { destination, options, selectedOption, isCorrect, showFeedback } =
+  const { destination, options, selectedOption, isCorrect, showFeedback, timeRemaining } =
     gameState;
+
+  // Calculate timer color based on time remaining
+  const getTimerColor = () => {
+    const percentage = timeRemaining / TIMER_DURATIONS[difficulty];
+    if (percentage > 0.66) return "text-green-500";
+    if (percentage > 0.33) return "text-yellow-500";
+    return "text-red-500";
+  };
 
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg">
@@ -173,8 +303,32 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
             incorrect
           </p>
         </div>
-        <ShareButton user={user} />
+        <div className="flex space-x-2">
+          <DifficultySelector 
+            currentDifficulty={difficulty} 
+            onSelectDifficulty={handleDifficultyChange} 
+          />
+          <ShareButton user={user} />
+        </div>
       </div>
+
+      {/* Timer display */}
+      {!showFeedback && (
+        <div className="mb-4 text-center">
+          <div className={`text-2xl font-bold ${getTimerColor()}`}>
+            Time remaining: {timeRemaining}s
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+            <div 
+              className={`h-2.5 rounded-full ${
+                timeRemaining > TIMER_DURATIONS[difficulty] * 0.66 ? "bg-green-500" : 
+                timeRemaining > TIMER_DURATIONS[difficulty] * 0.33 ? "bg-yellow-500" : "bg-red-500"
+              }`} 
+              style={{ width: `${(timeRemaining / TIMER_DURATIONS[difficulty]) * 100}%` }}
+            ></div>
+          </div>
+        </div>
+      )}
 
       <div className="mb-8">
         <h3 className="text-xl font-semibold mb-4">Where am I?</h3>
@@ -216,12 +370,18 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
           }`}
         >
           <h3 className="text-xl font-semibold mb-2">
-            {isCorrect ? "🎉 Correct!" : "😢 Incorrect!"}
+            {isCorrect 
+              ? "🎉 Correct!" 
+              : selectedOption === "timeout" 
+                ? "⏰ Time's up!" 
+                : "😢 Incorrect!"}
           </h3>
           <p className="mb-2">
             {isCorrect
               ? `You guessed it! It's ${destination.city}, ${destination.country}.`
-              : `Sorry, the correct answer was ${destination.city}, ${destination.country}.`}
+              : selectedOption === "timeout"
+                ? `You ran out of time! The answer was ${destination.city}, ${destination.country}.`
+                : `Sorry, the correct answer was ${destination.city}, ${destination.country}.`}
           </p>
           <p className="font-medium">Fun Fact:</p>
           <p>

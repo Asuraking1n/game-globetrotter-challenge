@@ -3,8 +3,11 @@ import fs from "fs";
 import path from "path";
 import { Destination } from "@/types";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const url = new URL(request.url);
+    const difficulty = url.searchParams.get("difficulty") || "medium";
+
     const filePath = path.join(process.cwd(), "data.json");
     const fileContents = fs.readFileSync(filePath, "utf8");
     const destinations: Destination[] = JSON.parse(fileContents);
@@ -23,7 +26,22 @@ export async function GET() {
       `${destination.city}, ${destination.country}`,
     ].sort(() => 0.5 - Math.random());
 
-    const numClues = Math.floor(Math.random() * 2) + 1;
+    // Adjust number of clues based on difficulty
+    let numClues;
+    switch (difficulty) {
+      case "easy":
+        numClues = 2; // Show all clues in easy mode
+        break;
+      case "medium":
+        numClues = Math.min(destination.clues.length, 1); // Show 1 clue in medium mode
+        break;
+      case "hard":
+        numClues = Math.min(destination.clues.length, 1); // Show 1 clue in hard mode, but make it more vague
+        break;
+      default:
+        numClues = 1;
+    }
+
     const selectedClues = destination.clues
       .sort(() => 0.5 - Math.random())
       .slice(0, numClues);

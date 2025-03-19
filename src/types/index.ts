@@ -6,10 +6,20 @@ export interface Destination {
   trivia: string[];
 }
 
+export interface ScoreByDifficulty {
+  correct: number;
+  incorrect: number;
+}
+
 export interface User {
   username: string;
   score: {
     correct: number;
     incorrect: number;
+    byDifficulty?: {
+      easy: ScoreByDifficulty;
+      medium: ScoreByDifficulty;
+      hard: ScoreByDifficulty;
+    };
   };
 } 
