@@ -12,4 +12,5 @@ export interface User {
     correct: number;
     incorrect: number;
   };
-} 
+  gameSession: string | null;
+}

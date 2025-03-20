@@ -2,12 +2,16 @@ import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { Destination } from "@/types";
+import { cookies } from "next/headers";
 
 export async function GET() {
   try {
     const filePath = path.join(process.cwd(), "data.json");
     const fileContents = fs.readFileSync(filePath, "utf8");
     const destinations: Destination[] = JSON.parse(fileContents);
+    const cookieStore = await cookies();
+
+    const gameIdFromCookie = cookieStore.get("gameId");
 
     const randomIndex = Math.floor(Math.random() * destinations.length);
     const destination = destinations[randomIndex];
@@ -28,6 +32,13 @@ export async function GET() {
       .sort(() => 0.5 - Math.random())
       .slice(0, numClues);
 
+    let gameId;
+
+    if (!gameIdFromCookie) {
+      gameId = Math.floor(Math.random() * 1000000)?.toString();
+      cookieStore.set("gameId", gameId, { secure: true });
+    }
+
     return NextResponse.json({
       destination: {
         city: destination.city,
@@ -36,6 +47,7 @@ export async function GET() {
         fun_fact: destination.fun_fact,
         trivia: destination.trivia,
       },
+      gameId: gameIdFromCookie || gameId,
       options,
     });
   } catch (error) {

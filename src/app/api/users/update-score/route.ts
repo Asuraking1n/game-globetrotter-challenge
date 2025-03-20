@@ -3,14 +3,14 @@ import clientPromise from "@/utils/mongodb";
 
 export async function POST(request: Request) {
   try {
-    const { username, isCorrect } = await request.json();
+    const { username, isCorrect, gameId } = await request.json();
 
-    if (!username) {
-      return NextResponse.json(
-        { error: "Username is required" },
-        { status: 400 }
-      );
-    }
+    // if (!username) {
+    //   return NextResponse.json(
+    //     { error: "Username is required" },
+    //     { status: 400 }
+    //   );
+    // }
 
     const client = await clientPromise;
     const db = client.db("globetrotter");

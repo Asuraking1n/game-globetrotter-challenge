@@ -1,14 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Destination, User } from "@/types";
 import Confetti from "./Confetti";
 import ShareButton from "./ShareButton";
 
 interface GameBoardProps {
-  user: User;
-  onUpdateUser: (user: User) => void;
-  invitedBy?: string;
+  // user: User;
+  // onUpdateUser: (user: User) => void;
+  // invitedBy?: string;
+  gameId: string;
+  destinationFromApi: {
+    destination: Destination;
+    options: string[];
+  };
 }
 
 interface GameState {
@@ -19,77 +24,77 @@ interface GameState {
   isLoading: boolean;
   error: string | null;
   showFeedback: boolean;
+  setUser?: (user: User) => void;
+  gameId: string;
 }
 
-const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
+const GameBoard = ({ destinationFromApi, gameId }: GameBoardProps) => {
   const [gameState, setGameState] = useState<GameState>({
-    destination: null,
-    options: [],
+    destination: destinationFromApi.destination,
+    options: destinationFromApi.options,
     selectedOption: null,
     isCorrect: null,
     isLoading: true,
     error: null,
     showFeedback: false,
+    gameId,
   });
 
-  const [inviterScore, setInviterScore] = useState<{
-    correct: number;
-    incorrect: number;
-  } | null>(null);
+  const [user, setUser] = useState({
+    username: "anonymous",
+    score: {
+      correct: 0,
+      incorrect: 0,
+    },
+    gameId,
+  });
 
-  useEffect(() => {
-    fetchDestination();
+  // const isAnonymousUser = user.username === "anonymous";
 
-    if (invitedBy) {
-      fetchInviterScore();
-    }
-  }, [invitedBy]);
+  // const [inviterScore, setInviterScore] = useState<{
+  //   correct: number;
+  //   incorrect: number;
+  // } | null>(null);
 
-  const fetchInviterScore = async () => {
-    try {
-      if (!invitedBy) return;
+  // useEffect(() => {
+  //   fetchDestination();
 
-      const response = await fetch(
-        `/api/users?username=${encodeURIComponent(invitedBy)}`
-      );
-      if (response.ok) {
-        const inviter = await response.json();
-        setInviterScore(inviter.score);
-      }
-    } catch (error) {
-      console.error("Error fetching inviter score:", error);
-    }
-  };
+  //   if (invitedBy) {
+  //     fetchInviterScore();
+  //   }
+  // }, [invitedBy]);
 
-  const fetchDestination = async () => {
-    setGameState((prev) => ({ ...prev, isLoading: true, error: null }));
+  // useEffect(() => {
+  //   if (isAnonymousUser) {
+  //     const gameLocalStateFromStorage =
+  //       localStorage.getItem("globetrotter_user");
 
-    try {
-      const response = await fetch("/api/destinations");
+  //     const gameLocalState = JSON.parse(gameLocalStateFromStorage || "{}");
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch destination");
-      }
+  //     if (gameLocalState) {
+  //       setUser({
+  //         username: "anonymous",
+  //         score: gameLocalState.score,
+  //       });
+  //     }
+  //   }
+  // }, []);
 
-      const data = await response.json();
+  // const fetchInviterScore = async () => {
+  //   try {
+  //     if (!invitedBy) return;
 
-      setGameState((prev) => ({
-        ...prev,
-        destination: data.destination,
-        options: data.options,
-        selectedOption: null,
-        isCorrect: null,
-        isLoading: false,
-        showFeedback: false,
-      }));
-    } catch (error) {
-      setGameState((prev) => ({
-        ...prev,
-        error: error instanceof Error ? error.message : "An error occurred",
-        isLoading: false,
-      }));
-    }
-  };
+  //     const response = await fetch(
+  //       `/api/users?username=${encodeURIComponent(invitedBy)}`
+  //     );
+  //     if (response.ok) {
+  //       const inviter = await response.json();
+  //       setInviterScore(inviter.score);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching inviter score:", error);
+  //   }
+  // };
 
   const handleOptionSelect = async (option: string) => {
     if (gameState.selectedOption || !gameState.destination) return;
@@ -104,6 +109,21 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
       showFeedback: true,
     }));
 
+    // if (isAnonymousUser) {
+    //   localStorage.setItem(
+    //     "globetrotter_user",
+    //     JSON.stringify({
+    //       ...user,
+    //       score: {
+    //         ...user.score,
+    //         [isCorrect ? "correct" : "incorrect"]:
+    //           user.score[isCorrect ? "correct" : "incorrect"] + 1,
+    //       },
+    //       gameState,
+    //     })
+    //   );
+    // }
+
     try {
       const response = await fetch("/api/users/update-score", {
         method: "POST",
@@ -113,39 +133,41 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
         body: JSON.stringify({
           username: user.username,
           isCorrect,
+          gameId,
         }),
       });
 
       if (response.ok) {
         const updatedUser = await response.json();
-        onUpdateUser(updatedUser);
+        setUser(updatedUser);
+        // onUpdateUser(updatedUser);
       }
     } catch (error) {
       console.error("Error updating score:", error);
     }
   };
 
-  const handleNextQuestion = () => {
-    fetchDestination();
-  };
+  // const handleNextQuestion = () => {
+  //   fetchDestination();
+  // };
 
-  if (gameState.isLoading) {
-    return <div className="text-center py-8">Loading...</div>;
-  }
+  // if (gameState.isLoading) {
+  //   return <div className="text-center py-8">Loading...</div>;
+  // }
 
-  if (gameState.error) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-red-500 mb-4">{gameState.error}</p>
-        <button
-          onClick={fetchDestination}
-          className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-200"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
+  // if (gameState.error) {
+  //   return (
+  //     <div className="text-center py-8">
+  //       <p className="text-red-500 mb-4">{gameState.error}</p>
+  //       <button
+  //         onClick={fetchDestination}
+  //         className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-200"
+  //       >
+  //         Try Again
+  //       </button>
+  //     </div>
+  //   );
+  // }
 
   if (!gameState.destination) {
     return <div className="text-center py-8">No destination found</div>;
@@ -156,14 +178,14 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
 
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-      {invitedBy && inviterScore && (
+      {/* {invitedBy && inviterScore && (
         <div className="mb-6 p-4 bg-blue-50 rounded-lg">
           <p className="text-center">
             You were challenged by <strong>{invitedBy}</strong> who has scored{" "}
             {inviterScore.correct} correct answers!
           </p>
         </div>
-      )}
+      )} */}
 
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -173,7 +195,7 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
             incorrect
           </p>
         </div>
-        <ShareButton user={user} />
+        {/* <ShareButton user={user} /> */}
       </div>
 
       <div className="mb-8">
@@ -234,7 +256,7 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
         </div>
       )}
 
-      {selectedOption && (
+      {/* {selectedOption && (
         <div className="text-center">
           <button
             onClick={handleNextQuestion}
@@ -243,7 +265,7 @@ const GameBoard = ({ user, onUpdateUser, invitedBy }: GameBoardProps) => {
             Next Question
           </button>
         </div>
-      )}
+      )} */}
 
       <Confetti isActive={!!isCorrect} />
     </div>

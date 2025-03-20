@@ -17,12 +17,13 @@ export async function POST(request: Request) {
     const db = client.db("globetrotter");
     const usersCollection = db.collection("users");
 
-
     const existingUser = await usersCollection.findOne({ username });
 
     if (existingUser) {
       return NextResponse.json(existingUser);
     }
+
+    const randomId = Math.floor(Math.random() * 1000000);
 
     const newUser: User = {
       username,
@@ -30,6 +31,7 @@ export async function POST(request: Request) {
         correct: 0,
         incorrect: 0,
       },
+      gameSession: randomId?.toString(),
     };
 
     await usersCollection.insertOne(newUser);
